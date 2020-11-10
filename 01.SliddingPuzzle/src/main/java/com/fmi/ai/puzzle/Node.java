@@ -1,4 +1,4 @@
-package com.fmi.ai.puzzle;
+package bg.sofia.uni.fmi.ai.slidding.puzzle;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,40 +8,44 @@ public class Node {
     public static final int PATH_COST = 1;
     private Node parent;
     private int[][] state;
+    private int zeroRow;
+    private int zeroColumn;
 
     public Node() {
         this.parent = null;
     }
 
-    public Node(Node parent, int[][] state) {
+    public Node(Node parent, int[][] state, int zeroRow, int zeroColumn) {
         this.parent = parent;
         this.state = state;
+        this.zeroRow = zeroRow;
+        this.zeroColumn = zeroColumn;
     }
 
     //  All nodes after one swapping (move)
     public List<Node> getSuccessors(Node parent) {
         List<Node> successors = new ArrayList<>();
-        for (int i = 0; i < parent.state.length; i++) {
-            for (int j = 0; j < parent.state.length; j++) {
-                if (parent.getState()[i][j] == 0) {
-                    if (i - 1 >= 0) {
-                        Node upStateNode = new Node(parent, getStateAfterSwappingUp(parent.getState()));
-                        successors.add(upStateNode);
-                    }
-                    if (i + 1 <= state.length - 1) {
-                        Node downStateNode = new Node(parent, getStateAfterSwappingDown(parent.getState()));
-                        successors.add(downStateNode);
-                    }
-                    if (j + 1 <= state.length - 1) {
-                        Node rightStateNode = new Node(parent, getStateAfterSwappingRight(parent.getState()));
-                        successors.add(rightStateNode);
-                    }
-                    if (j - 1 >= 0) {
-                        Node leftStateNode = new Node(parent, getStateAfterSwappingLeft(parent.getState()));
-                        successors.add(leftStateNode);
-                    }
-                }
-            }
+        int zeroRowIndex = parent.getZeroRow();
+        int zeroColumnIndex = parent.getZeroColumn();
+        if (zeroRowIndex - 1 >= 0) {
+            int[][] newState = getStateAfterSwappingUp(parent.getState(), zeroRowIndex, zeroColumnIndex);
+            Node upStateNode = new Node(parent, newState, zeroRowIndex - 1, zeroColumnIndex);
+            successors.add(upStateNode);
+        }
+        if (zeroRowIndex + 1 <= state.length - 1) {
+            int[][] newState = getStateAfterSwappingDown(parent.getState(), zeroRowIndex, zeroColumnIndex);
+            Node downStateNode = new Node(parent, newState, zeroRowIndex + 1, zeroColumnIndex);
+            successors.add(downStateNode);
+        }
+        if (zeroColumnIndex + 1 <= state.length - 1) {
+            int[][] newState = getStateAfterSwappingRight(parent.getState(), zeroRowIndex, zeroColumnIndex);
+            Node rightStateNode = new Node(parent, newState, zeroRowIndex, zeroColumnIndex + 1);
+            successors.add(rightStateNode);
+        }
+        if (zeroColumnIndex - 1 >= 0) {
+            int[][] newState = getStateAfterSwappingLeft(parent.getState(), zeroRowIndex, zeroColumnIndex);
+            Node leftStateNode = new Node(parent, newState, zeroRowIndex, zeroColumnIndex - 1);
+            successors.add(leftStateNode);
         }
         return successors;
     }
@@ -67,20 +71,8 @@ public class Node {
         return true;
     }
 
-    // Check if the board is solvable
-    public boolean isSolvable() {
-        if ((state.length * state.length) % 2 == 0) {
-            return (numberInversions() + getIndexOfZero(this.state, true)) % 2 != 0;
-        }
-        return numberInversions() % 2 == 0;
-    }
-
     public Node getParent() {
         return this.parent;
-    }
-
-    public void setParent(Node parent) {
-        this.parent = parent;
     }
 
     public int[][] getState() {
@@ -91,79 +83,41 @@ public class Node {
         this.state = state;
     }
 
+    public int getZeroRow() {
+        return zeroRow;
+    }
+
+    public int getZeroColumn() {
+        return zeroColumn;
+    }
+
     public int distanceFromParent() {
         return PATH_COST;
     }
 
-    private int numberInversions() {
-        int inversions = 0;
-        int[] tempArray = new int[state.length * state.length - 1];
-        int tempIndex = 0;
-        for (int i = 0; i < state.length; i++) {
-            for (int j = 0; j < state.length; j++) {
-                if (state[i][j] != 0) {
-                    tempArray[tempIndex] = state[i][j];
-                    tempIndex++;
-                    if (tempIndex > state.length * state.length - 1) {
-                        return 0;
-                    }
-                }
-            }
-        }
-        for (int i = 0; i < state.length * state.length - 2; i++) {
-            for (int j = i + 1; j < state.length * state.length - 1; j++) {
-                if (tempArray[i] > tempArray[j]) {
-                    inversions++;
-                }
-            }
-        }
-        return inversions;
-    }
-
-    private int getIndexOfZero(int[][] state, boolean isRow) {
-        for (int i = 0; i < state.length; i++) {
-            for (int j = 0; j < state.length; j++) {
-                if (state[i][j] == 0 && isRow) {
-                    return i;
-                } else if (state[i][j] == 0 && !isRow) {
-                    return j;
-                }
-            }
-        }
-        return -1;
-    }
-
-    private int[][] getStateAfterSwappingUp(int[][] currentState) {
+    private int[][] getStateAfterSwappingUp(int[][] currentState, int zeroRow, int zeroColumn) {
         int[][] stateAfterSwapping = copyState(currentState);
-        int zeroRow = getIndexOfZero(stateAfterSwapping, true);
-        int zeroColumn = getIndexOfZero(stateAfterSwapping, false);
         stateAfterSwapping[zeroRow][zeroColumn] = stateAfterSwapping[zeroRow - 1][zeroColumn];
         stateAfterSwapping[zeroRow - 1][zeroColumn] = 0;
         return stateAfterSwapping;
     }
 
-    private int[][] getStateAfterSwappingDown(int[][] currentState) {
+    private int[][] getStateAfterSwappingDown(int[][] currentState, int zeroRow, int zeroColumn) {
         int[][] stateAfterSwapping = copyState(currentState);
-        int zeroRow = getIndexOfZero(stateAfterSwapping, true);
-        int zeroColumn = getIndexOfZero(stateAfterSwapping, false);
         stateAfterSwapping[zeroRow][zeroColumn] = stateAfterSwapping[zeroRow + 1][zeroColumn];
         stateAfterSwapping[zeroRow + 1][zeroColumn] = 0;
         return stateAfterSwapping;
     }
 
-    private int[][] getStateAfterSwappingRight(int[][] currentState) {
+    private int[][] getStateAfterSwappingRight(int[][] currentState, int zeroRow, int zeroColumn) {
         int[][] stateAfterSwapping = copyState(currentState);
-        int zeroRow = getIndexOfZero(stateAfterSwapping, true);
-        int zeroColumn = getIndexOfZero(stateAfterSwapping, false);
         stateAfterSwapping[zeroRow][zeroColumn] = stateAfterSwapping[zeroRow][zeroColumn + 1];
         stateAfterSwapping[zeroRow][zeroColumn + 1] = 0;
         return stateAfterSwapping;
     }
 
-    private int[][] getStateAfterSwappingLeft(int[][] currentState) {
+    private int[][] getStateAfterSwappingLeft(int[][] currentState, int zeroRow, int zeroColumn) {
         int[][] stateAfterSwapping = copyState(currentState);
-        int zeroRow = getIndexOfZero(stateAfterSwapping, true);
-        int zeroColumn = getIndexOfZero(stateAfterSwapping, false);
         stateAfterSwapping[zeroRow][zeroColumn] = stateAfterSwapping[zeroRow][zeroColumn - 1];
         stateAfterSwapping[zeroRow][zeroColumn - 1] = 0;
         return stateAfterSwapping;
