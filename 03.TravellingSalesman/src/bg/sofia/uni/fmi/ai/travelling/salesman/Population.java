@@ -31,7 +31,8 @@ public class Population {
 
     public Individual[] getBestIndividuals(int numberOfIndividuals) {
         return Arrays.stream(individuals)
-                .sorted(Comparator.comparing(Individual::getFitness)).limit(numberOfIndividuals)
+                .sorted(Comparator.comparing(Individual::getFitness).reversed())
+                .limit(numberOfIndividuals)
                 .collect(Collectors.toList())
                 .toArray(new Individual[numberOfIndividuals]);
     }
